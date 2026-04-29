@@ -1,86 +1,61 @@
-<<<<<<< HEAD
 # S3 Browser
 
-A self-hosted S3 browser and uploader. Works with AWS S3, Wasabi, Backblaze B2, Cloudflare R2, MinIO, and any S3-compatible provider.
-
-## Quick Start
-
-### With Docker Compose (recommended)
-
-```bash
-# Default password is "admin"
-docker compose up -d
-
-# Set a custom password
-APP_PASSWORD=mysecretpassword docker compose up -d
-```
-
-Open http://localhost:3000
-
-### With Docker
-
-```bash
-docker build -t s3browser .
-
-docker run -d \
-  -p 3000:3000 \
-  -e APP_PASSWORD=mysecretpassword \
-  -e SESSION_SECRET=a_long_random_string_here \
-  --name s3browser \
-  s3browser
-```
-
-## Environment Variables
-
-| Variable         | Default   | Description                          |
-|------------------|-----------|--------------------------------------|
-| `APP_PASSWORD`   | `admin`   | Login password for the web UI        |
-| `SESSION_SECRET` | random    | Secret for signing session cookies   |
-| `PORT`           | `3000`    | Port to listen on                    |
-
-## Provider Setup Examples
-
-### AWS S3
-- Endpoint: *(leave blank)*
-- Region: `us-east-1` (or your bucket's region)
-- Force path-style: off
-
-### Wasabi
-- Endpoint: `https://s3.wasabisys.com`
-- Region: `us-east-1` (or your bucket's region, e.g. `eu-central-1`)
-- Force path-style: off
-
-### Backblaze B2
-- Endpoint: `https://s3.us-west-004.backblazeb2.com` (check your bucket's endpoint)
-- Region: `us-west-004` (match your bucket)
-- Force path-style: off
-
-### Cloudflare R2
-- Endpoint: `https://<YOUR_ACCOUNT_ID>.r2.cloudflarestorage.com`
-- Region: `auto`
-- Force path-style: off
-
-### MinIO (local)
-- Endpoint: `http://your-minio-host:9000`
-- Region: `us-east-1`
-- Force path-style: **on**
-
-## Security Notes
-
-- Credentials are stored **in the server-side session only** — never persisted to disk
-- Use a strong `APP_PASSWORD` and a random `SESSION_SECRET` in production
-- Run behind a reverse proxy (nginx/Caddy) with HTTPS in any non-local environment
-- Sessions expire after 24 hours
+A lightweight, web-based S3 file browser and uploader. Supports AWS S3, Wasabi, Backblaze B2, Cloudflare R2, MinIO, and other S3-compatible providers.
 
 ## Features
 
-- Login-protected web UI
-- Connect to any S3-compatible provider
-- Browse buckets and folders
-- Upload files with real progress bars (drag-and-drop or file picker)
-- Download files via presigned URLs
-- Delete files and folders
-- Search within current folder
-=======
-# S3Browser
->>>>>>> 439c1316389f6fa9a39c1c700f75f4fb2af53c6d
+- **Multi-Provider Support**: Configure and save multiple S3 providers (AWS, Wasabi, MinIO, etc.) and switch between them instantly.
+- **Bucket Management**: List and create buckets.
+- **File Browser**: Navigate through folders, view file sizes, and modification dates.
+- **Fast Uploads**: Supports multi-part uploads with concurrency limits for large files and folders.
+- **Downloads**: Generate secure, time-limited presigned URLs for downloading objects.
+- **Search**: Filter objects within the current directory.
+- **Modern UI**: Clean, dark-themed interface with real-time upload progress tracking.
+
+## Getting Started
+
+### Prerequisites
+
+- Docker and Docker Compose
+
+### Installation
+
+1. Clone this repository.
+2. (Optional) Create a `.env` file to customize the application password and session secret:
+   ```env
+   APP_PASSWORD=your_secure_password
+   SESSION_SECRET=your_random_secret_string
+   ```
+3. Start the application:
+   ```bash
+   docker compose up --build -d
+   ```
+4. Access the browser at `http://localhost:5000`.
+
+## Usage
+
+### Managing Providers
+
+1. **Sign In**: Use the password defined in your environment (default is `admin`).
+2. **Settings**: Click the **Settings** (⚙) button in the top bar to manage providers.
+3. **Add Provider**: 
+   - Enter a friendly **Provider Name** (e.g., "My Production Wasabi").
+   - Use the **Quick Presets** to automatically fill in endpoint and region settings for popular services.
+   - Enter your **Access Key ID** and **Secret Access Key**.
+   - Click **Connect** to verify the connection and save the configuration.
+4. **Switching Providers**: Once multiple providers are configured, you can switch between them using the dropdown menu in the top navigation bar.
+5. **Edit/Delete**: Select a provider from the sidebar in the Settings view to modify its details or remove it.
+
+### Browsing and Uploading
+
+- **Navigation**: Click on folders to navigate. Use the **Up** button to go back.
+- **Upload**: Drag and drop files or entire folders into the sidebar drop zone, or use the **Upload** buttons.
+- **Refresh**: Use the **Refresh** button to sync the current view with the S3 bucket.
+
+## Security Note
+
+This application stores your S3 credentials in your server-side session. Ensure that `SESSION_SECRET` is set to a long, random string in production to protect session data.
+
+## License
+
+MIT

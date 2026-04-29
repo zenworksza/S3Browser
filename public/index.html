@@ -115,11 +115,26 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 #configView {
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background: var(--bg);
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.config-container {
+  display: grid;
+  grid-template-columns: 320px 480px;
+  gap: 24px;
+  max-width: 824px;
+  width: 100%;
+}
+.config-sidebar {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  padding: 24px;
+  height: fit-content;
 }
 .config-box {
-  width: 480px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg2);
@@ -149,6 +164,35 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .config-actions { display: flex; gap: 10px; margin-top: 4px; }
 .config-actions .btn { width: auto; flex: 1; }
 
+.provider-list-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg3);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.provider-list-item:hover { border-color: var(--border2); }
+.provider-list-item.active { border-color: var(--accent); background: var(--accent-dim); }
+.provider-list-item .p-name { font-weight: 500; font-size: 13px; color: var(--text); }
+.provider-list-item .p-meta { font-family: var(--mono); font-size: 10px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.provider-list-actions { display: flex; gap: 6px; margin-top: 4px; }
+.provider-list-actions button {
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.provider-list-actions button:hover { border-color: var(--border2); color: var(--text); }
+
 /* ── BROWSER VIEW ── */
 #browserView { flex-direction: column; height: 100vh; overflow: hidden; }
 
@@ -165,7 +209,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .topbar-logo { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.12em; display: flex; align-items: center; gap: 7px; }
 .topbar-logo::before { content: ''; display: inline-block; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
 .topbar-sep { width: 1px; height: 20px; background: var(--border); }
-.topbar-bucket-select {
+.topbar-bucket-select, .topbar-provider-select {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -175,9 +219,9 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   font-size: 12px;
   outline: none;
   cursor: pointer;
-  min-width: 160px;
+  min-width: 140px;
 }
-.topbar-bucket-select:focus { border-color: var(--accent); }
+.topbar-bucket-select:focus, .topbar-provider-select:focus { border-color: var(--accent); }
 .topbar-spacer { flex: 1; }
 .topbar-btn {
   padding: 6px 12px;
@@ -447,47 +491,63 @@ tbody tr:last-child td { border-bottom: none; }
 
 <!-- CONFIG -->
 <div id="configView" class="view">
-  <div class="config-box">
-    <div class="logo">S3 BROWSER</div>
-    <h2>Connect to S3</h2>
-    <p class="subtitle">Works with AWS, Wasabi, Backblaze B2, MinIO, Cloudflare R2, and any S3-compatible provider</p>
-
-    <div class="sidebar-label" style="margin-bottom:10px;">Quick presets</div>
-    <div class="preset-row">
-      <button class="preset-btn" onclick="applyPreset('aws')">AWS S3</button>
-      <button class="preset-btn" onclick="applyPreset('wasabi')">Wasabi</button>
-      <button class="preset-btn" onclick="applyPreset('backblaze')">Backblaze B2</button>
-      <button class="preset-btn" onclick="applyPreset('r2')">Cloudflare R2</button>
-      <button class="preset-btn" onclick="applyPreset('minio')">MinIO</button>
+  <div class="config-container">
+    <div class="config-sidebar">
+      <div class="sidebar-label" style="margin-bottom:12px;">Providers</div>
+      <div id="providersList">
+        <div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No providers configured</div>
+      </div>
+      <button class="btn btn-ghost" onclick="newProvider()" style="margin-top:12px;font-size:12px;padding:8px;">+ Add Provider</button>
+      <button class="btn btn-ghost" onclick="doLogout()" style="margin-top:24px;font-size:12px;padding:8px;border-color:transparent;">Sign out</button>
     </div>
 
-    <div class="field">
-      <label>Endpoint URL <span style="color:var(--text3);">(leave blank for AWS)</span></label>
-      <input type="url" id="cfgEndpoint" placeholder="https://s3.wasabisys.com">
-    </div>
-    <div class="row2">
+    <div class="config-box">
+      <div class="logo">S3 BROWSER</div>
+      <h2 id="configTitle">Connect to S3</h2>
+      <p class="subtitle" id="configSubtitle">Works with AWS, Wasabi, Backblaze B2, MinIO, Cloudflare R2, and any S3-compatible provider</p>
+
+      <div class="sidebar-label" style="margin-bottom:10px;">Quick presets</div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="applyPreset('aws')">AWS S3</button>
+        <button class="preset-btn" onclick="applyPreset('wasabi')">Wasabi</button>
+        <button class="preset-btn" onclick="applyPreset('backblaze')">Backblaze B2</button>
+        <button class="preset-btn" onclick="applyPreset('r2')">Cloudflare R2</button>
+        <button class="preset-btn" onclick="applyPreset('minio')">MinIO</button>
+      </div>
+
+      <input type="hidden" id="cfgId">
       <div class="field">
-        <label>Access Key ID</label>
-        <input type="text" id="cfgAccessKey" placeholder="AKIA...">
+        <label>Provider Name</label>
+        <input type="text" id="cfgName" placeholder="My S3 Provider">
       </div>
       <div class="field">
-        <label>Secret Access Key</label>
-        <input type="password" id="cfgSecretKey" placeholder="••••••••">
+        <label>Endpoint URL <span style="color:var(--text3);">(leave blank for AWS)</span></label>
+        <input type="url" id="cfgEndpoint" placeholder="https://s3.wasabisys.com">
       </div>
+      <div class="row2">
+        <div class="field">
+          <label>Access Key ID</label>
+          <input type="text" id="cfgAccessKey" placeholder="AKIA...">
+        </div>
+        <div class="field">
+          <label>Secret Access Key</label>
+          <input type="password" id="cfgSecretKey" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="field">
+        <label>Region</label>
+        <input type="text" id="cfgRegion" placeholder="us-east-1" value="us-east-1">
+      </div>
+      <div class="checkbox-field">
+        <input type="checkbox" id="cfgPathStyle">
+        <label for="cfgPathStyle">Force path-style URLs (required for MinIO and some providers)</label>
+      </div>
+      <div class="config-actions">
+        <button class="btn btn-ghost" onclick="cancelConfig()" id="cancelConfigBtn" style="display:none">Cancel</button>
+        <button class="btn btn-primary" onclick="doConnect()" id="connectBtn">Connect</button>
+      </div>
+      <div id="configError" class="error-msg"></div>
     </div>
-    <div class="field">
-      <label>Region</label>
-      <input type="text" id="cfgRegion" placeholder="us-east-1" value="us-east-1">
-    </div>
-    <div class="checkbox-field">
-      <input type="checkbox" id="cfgPathStyle">
-      <label for="cfgPathStyle">Force path-style URLs (required for MinIO and some providers)</label>
-    </div>
-    <div class="config-actions">
-      <button class="btn btn-ghost" onclick="doLogout()" style="flex:0;white-space:nowrap;padding:10px 16px;">Sign out</button>
-      <button class="btn btn-primary" onclick="doConnect()" id="connectBtn">Connect</button>
-    </div>
-    <div id="configError" class="error-msg"></div>
   </div>
 </div>
 
@@ -495,6 +555,10 @@ tbody tr:last-child td { border-bottom: none; }
 <div id="browserView" class="view">
   <div class="topbar">
     <div class="topbar-logo">S3 BROWSER</div>
+    <div class="topbar-sep"></div>
+    <select class="topbar-provider-select" id="providerSelect" onchange="switchProvider(this.value)">
+      <option value="">— select provider —</option>
+    </select>
     <div class="topbar-sep"></div>
     <select class="topbar-bucket-select" id="bucketSelect" onchange="switchBucket(this.value)">
       <option value="">— select bucket —</option>
@@ -573,6 +637,8 @@ const $ = id => document.getElementById(id);
 let currentBucket = '';
 let currentPrefix = '';
 let allObjects = [];
+let allProviders = [];
+let activeProviderId = null;
 
 // ── UTILS ──
 function fmt(bytes) {
@@ -623,13 +689,24 @@ async function checkAuth() {
   try {
     const me = await api('GET', '/api/me');
     if (!me.authenticated) return showView('loginView');
+    
+    allProviders = me.providers || [];
+    activeProviderId = me.activeProviderId;
+    
+    renderProvidersList();
+    updateProviderSelect();
+
     if (!me.hasConfig) {
-      if (me.config) populateConfigForm(me.config);
+      newProvider();
       return showView('configView');
     }
+    
     showView('browserView');
     loadBuckets();
-  } catch { showView('loginView'); }
+  } catch (err) { 
+    console.error(err);
+    showView('loginView'); 
+  }
 }
 
 async function doLogin() {
@@ -646,33 +723,107 @@ $('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doL
 
 async function doLogout() {
   await api('POST', '/api/logout').catch(() => {});
-  currentBucket = ''; currentPrefix = ''; allObjects = [];
+  currentBucket = ''; currentPrefix = ''; allObjects = []; allProviders = []; activeProviderId = null;
   showView('loginView');
 }
 
 function showConfig() {
-  api('GET', '/api/me').then(me => {
-    if (me.config) populateConfigForm(me.config);
-  });
+  renderProvidersList();
+  if (allProviders.length > 0) {
+    $('cancelConfigBtn').style.display = 'block';
+  }
   showView('configView');
 }
 
-function populateConfigForm(cfg) {
-  if (cfg.endpoint) $('cfgEndpoint').value = cfg.endpoint;
-  if (cfg.region) $('cfgRegion').value = cfg.region;
-  $('cfgPathStyle').checked = !!cfg.forcePathStyle;
+function cancelConfig() {
+  showView('browserView');
+}
+
+function newProvider() {
+  populateConfigForm({ name: '', endpoint: '', region: 'us-east-1', forcePathStyle: false, id: '' });
+  $('configTitle').textContent = 'Add Provider';
+  $('configSubtitle').textContent = 'Configure a new S3-compatible storage provider';
+  $('cancelConfigBtn').style.display = allProviders.length > 0 ? 'block' : 'none';
+}
+
+function editProvider(id) {
+  const p = allProviders.find(x => x.id === id);
+  if (!p) return;
+  populateConfigForm(p);
+  $('configTitle').textContent = 'Edit Provider';
+  $('configSubtitle').textContent = 'Update settings for ' + p.name;
+  $('cancelConfigBtn').style.display = 'block';
+}
+
+function populateConfigForm(p) {
+  $('cfgId').value = p.id || '';
+  $('cfgName').value = p.name || '';
+  $('cfgEndpoint').value = p.endpoint || '';
+  $('cfgRegion').value = p.region || 'us-east-1';
+  $('cfgPathStyle').checked = !!p.forcePathStyle;
+  $('cfgAccessKey').value = '';
+  $('cfgSecretKey').value = '';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+function renderProvidersList() {
+  const list = $('providersList');
+  if (allProviders.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No providers configured</div>';
+    return;
+  }
+  list.innerHTML = allProviders.map(p => `
+    <div class="provider-list-item ${p.id === activeProviderId ? 'active' : ''}" onclick="editProvider('${p.id}')">
+      <div class="p-name">${esc(p.name)}</div>
+      <div class="p-meta">${esc(p.endpoint || 'AWS S3')} / ${esc(p.region)}</div>
+      <div class="provider-list-actions">
+        <button onclick="event.stopPropagation(); deleteProvider('${p.id}', '${esc(p.name)}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateProviderSelect() {
+  const sel = $('providerSelect');
+  sel.innerHTML = '<option value="">— select provider —</option>' +
+    allProviders.map(p => `<option value="${p.id}" ${p.id === activeProviderId ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+
+async function switchProvider(id) {
+  if (!id) return;
+  try {
+    await api('POST', '/api/config/select', { id });
+    activeProviderId = id;
+    currentBucket = '';
+    currentPrefix = '';
+    loadBuckets();
+  } catch (err) {
+    showToast('Failed to switch provider: ' + err.message, 'err');
+  }
+}
+
+async function deleteProvider(id, name) {
+  if (!confirm(`Remove provider "${name}"?`)) return;
+  try {
+    await api('DELETE', `/api/config/${id}`);
+    showToast('Provider removed');
+    checkAuth();
+  } catch (err) {
+    showToast('Failed to remove: ' + err.message, 'err');
+  }
 }
 
 // ── PRESETS ──
 const presets = {
-  aws: { endpoint: '', region: 'us-east-1', pathStyle: false },
-  wasabi: { endpoint: 'https://s3.wasabisys.com', region: 'us-east-1', pathStyle: false },
-  backblaze: { endpoint: 'https://s3.us-west-004.backblazeb2.com', region: 'us-west-004', pathStyle: false },
-  r2: { endpoint: 'https://<accountid>.r2.cloudflarestorage.com', region: 'auto', pathStyle: false },
-  minio: { endpoint: 'http://localhost:9000', region: 'us-east-1', pathStyle: true },
+  aws: { name: 'AWS S3', endpoint: '', region: 'us-east-1', pathStyle: false },
+  wasabi: { name: 'Wasabi', endpoint: 'https://s3.wasabisys.com', region: 'us-east-1', pathStyle: false },
+  backblaze: { name: 'Backblaze B2', endpoint: 'https://s3.us-west-004.backblazeb2.com', region: 'us-west-004', pathStyle: false },
+  r2: { name: 'Cloudflare R2', endpoint: 'https://<accountid>.r2.cloudflarestorage.com', region: 'auto', pathStyle: false },
+  minio: { name: 'MinIO', endpoint: 'http://localhost:9000', region: 'us-east-1', pathStyle: true },
 };
 function applyPreset(key) {
   const p = presets[key];
+  if (!$('cfgName').value) $('cfgName').value = p.name;
   $('cfgEndpoint').value = p.endpoint;
   $('cfgRegion').value = p.region;
   $('cfgPathStyle').checked = p.pathStyle;
@@ -685,15 +836,19 @@ async function doConnect() {
   btn.disabled = true; btn.textContent = 'Connecting...';
   $('configError').classList.remove('show');
   try {
-    await api('POST', '/api/config', {
+    const id = $('cfgId').value;
+    const res = await api('POST', '/api/config', {
+      id: id || undefined,
+      name: $('cfgName').value.trim() || 'S3 Provider',
       endpoint: $('cfgEndpoint').value.trim(),
       accessKey: $('cfgAccessKey').value.trim(),
       secretKey: $('cfgSecretKey').value.trim(),
       region: $('cfgRegion').value.trim() || 'us-east-1',
       forcePathStyle: $('cfgPathStyle').checked,
     });
-    showView('browserView');
-    loadBuckets();
+    activeProviderId = res.id;
+    showToast('Connected successfully');
+    checkAuth();
   } catch (err) {
     $('configError').textContent = err.message;
     $('configError').classList.add('show');
@@ -709,9 +864,18 @@ async function loadBuckets() {
     const sel = $('bucketSelect');
     sel.innerHTML = '<option value="">— select bucket —</option>' +
       buckets.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
-    if (buckets.length === 1) { sel.value = buckets[0].name; switchBucket(buckets[0].name); }
+    
+    // Auto-select if only one bucket exists
+    if (buckets.length === 1) { 
+      sel.value = buckets[0].name; 
+      switchBucket(buckets[0].name); 
+    } else {
+      switchBucket(''); // Clear current view
+    }
   } catch (err) {
     showToast('Failed to load buckets: ' + err.message, 'err');
+    $('bucketSelect').innerHTML = '<option value="">— select bucket —</option>';
+    switchBucket('');
   }
 }
 
@@ -719,7 +883,12 @@ function switchBucket(name) {
   currentBucket = name;
   currentPrefix = '';
   allObjects = [];
-  if (!name) { $('fileTableWrap').innerHTML = '<div class="empty-state">Select a bucket to begin</div>'; $('statsBar').style.display='none'; return; }
+  if (!name) { 
+    $('fileTableWrap').innerHTML = '<div class="empty-state">Select a bucket to begin</div>'; 
+    $('statsBar').style.display='none'; 
+    $('breadcrumb').innerHTML = '<span style="color:var(--text3);font-family:var(--mono);font-size:12px;">No bucket selected</span>';
+    return; 
+  }
   refreshObjects();
 }
 

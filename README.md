@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # S3 Browser
 
 A self-hosted S3 browser and uploader. Works with AWS S3, Wasabi, Backblaze B2, Cloudflare R2, MinIO, and any S3-compatible provider.

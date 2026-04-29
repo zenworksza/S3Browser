@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # S3 Browser
 
 A self-hosted S3 browser and uploader. Works with AWS S3, Wasabi, Backblaze B2, Cloudflare R2, MinIO, and any S3-compatible provider.
@@ -80,3 +81,6 @@ docker run -d \
 - Download files via presigned URLs
 - Delete files and folders
 - Search within current folder
+=======
+# S3Browser
+>>>>>>> 439c1316389f6fa9a39c1c700f75f4fb2af53c6d

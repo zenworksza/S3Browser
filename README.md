@@ -83,4 +83,3 @@ docker run -d \
 - Search within current folder
 =======
 # S3Browser
->>>>>>> 439c1316389f6fa9a39c1c700f75f4fb2af53c6d

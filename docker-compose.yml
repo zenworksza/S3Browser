@@ -1,0 +1,10 @@
+services:
+  s3browser:
+    build: .
+    ports:
+      - "5000:3000"
+    environment:
+      - APP_PASSWORD=${APP_PASSWORD:-admin}
+      - SESSION_SECRET=${SESSION_SECRET:-changeme_use_a_long_random_string}
+      - PORT=3000
+    restart: unless-stopped

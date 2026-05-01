@@ -7,4 +7,6 @@ services:
       - APP_PASSWORD=${APP_PASSWORD:-admin}
       - SESSION_SECRET=${SESSION_SECRET:-changeme_use_a_long_random_string}
       - PORT=3000
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped

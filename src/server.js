@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const busboy = require('busboy');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const { S3Client, ListBucketsCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, CreateBucketCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
@@ -13,6 +14,56 @@ const PORT = process.env.PORT || 3000;
 // Use a fixed fallback secret so sessions survive container restarts in dev
 const SESSION_SECRET = process.env.SESSION_SECRET || 's3browser-dev-secret-change-in-production';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'admin';
+
+// Persist providers across sessions / container restarts
+const DATA_DIR = path.join(__dirname, '../data');
+const PROVIDERS_FILE = path.join(DATA_DIR, 'providers.json');
+
+let persistedProviders = [];
+let persistedActiveProviderId = null;
+
+function loadPersistedProviders() {
+  try {
+    if (fs.existsSync(PROVIDERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(PROVIDERS_FILE, 'utf8'));
+      persistedProviders = data.providers || [];
+      persistedActiveProviderId = data.activeProviderId || null;
+    }
+  } catch (err) {
+    console.error('Failed to load persisted providers:', err.message);
+    persistedProviders = [];
+    persistedActiveProviderId = null;
+  }
+}
+
+function savePersistedProviders() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(PROVIDERS_FILE, JSON.stringify({
+      providers: persistedProviders,
+      activeProviderId: persistedActiveProviderId
+    }, null, 2));
+  } catch (err) {
+    console.error('Failed to save persisted providers:', err.message);
+  }
+}
+
+function syncProvidersToSession(req) {
+  if (!req.session.s3providers || req.session.s3providers.length === 0) {
+    req.session.s3providers = JSON.parse(JSON.stringify(persistedProviders));
+  }
+  if (!req.session.activeProviderId && persistedActiveProviderId) {
+    req.session.activeProviderId = persistedActiveProviderId;
+  }
+}
+
+function updatePersistedProviders(req) {
+  persistedProviders = JSON.parse(JSON.stringify(req.session.s3providers || []));
+  persistedActiveProviderId = req.session.activeProviderId || null;
+  savePersistedProviders();
+}
+
+loadPersistedProviders();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -49,6 +100,7 @@ app.post('/api/login', (req, res) => {
   const { password } = req.body;
   if (password === APP_PASSWORD) {
     req.session.authenticated = true;
+    syncProvidersToSession(req);
     req.session.save(err => {
       if (err) return res.status(500).json({ error: 'Session error' });
       res.json({ ok: true });
@@ -64,6 +116,7 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/me', (req, res) => {
+  syncProvidersToSession(req);
   const providers = (req.session.s3providers || []).map(p => ({
     id: p.id,
     name: p.name,
@@ -125,6 +178,7 @@ app.post('/api/config', requireAuth, async (req, res) => {
     req.session.activeProviderId = cfg.id;
   }
 
+  updatePersistedProviders(req);
   req.session.save(err => {
     if (err) return res.status(500).json({ error: 'Failed to save session' });
     res.json({ ok: true, id: cfg.id });
@@ -137,6 +191,7 @@ app.post('/api/config/select', requireAuth, (req, res) => {
   if (!providers.find(p => p.id === id)) return res.status(404).json({ error: 'Provider not found' });
   
   req.session.activeProviderId = id;
+  updatePersistedProviders(req);
   req.session.save(err => {
     if (err) return res.status(500).json({ error: 'Failed to save session' });
     res.json({ ok: true });
@@ -152,6 +207,7 @@ app.delete('/api/config/:id', requireAuth, (req, res) => {
     req.session.activeProviderId = req.session.s3providers.length > 0 ? req.session.s3providers[0].id : null;
   }
   
+  updatePersistedProviders(req);
   req.session.save(() => res.json({ ok: true }));
 });
 
